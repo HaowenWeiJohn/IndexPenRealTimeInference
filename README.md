@@ -1,2 +1,2 @@
-# IndexPenRealTimeInference
-IndexPen Real-Time Inference with RealityNavigation/RealityNavigationSPS
+# RealityNavigationTimeInference
+RealityNavigation Real-Time Inference with RealityNavigation/RealityNavigationSPS
