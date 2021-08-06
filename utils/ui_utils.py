@@ -88,6 +88,18 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None, vert
 
     return layout, textbox
 
+def init_textEditInputBox(parent, label=None, label_bold=False, default_input=None, vertical=False):
+    container, layout = init_container(parent=parent,
+                                       label=label,
+                                       label_bold=label_bold,
+                                       vertical=vertical)
+    textbox = QtWidgets.QTextEdit()
+    textbox.setContentsMargins(5, 0, 0, 0)
+    textbox.setText(str(default_input))
+    layout.addWidget(textbox)
+    # textbox.setStyleSheet("background-color:white;")
+
+    return layout, textbox
 
 def init_button(parent, label=None, function=None, style=config_ui.button_style_classic):
     btn = QtWidgets.QPushButton(text=label)
