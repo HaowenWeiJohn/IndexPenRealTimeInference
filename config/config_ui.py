@@ -49,4 +49,4 @@ indexPen_classes_default = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
 
 marker_lsl_outlet_name_default = 'IndexPen-30'
 error_marker_lsl_outlet_name_default = 'IndexPen-30-Error'
-mmWave_lsl_outlet_name_default = 'mmWave_6843AOP'
+mmWave_lsl_outlet_name_default = 'TImmWave_6843AOP'

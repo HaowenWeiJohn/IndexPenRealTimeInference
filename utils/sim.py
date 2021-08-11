@@ -2,7 +2,7 @@ import random
 import time
 import numpy as np
 from config import config
-import config_signal
+from config import config_signal
 
 def sim_openBCI_eeg():
     return np.random.uniform(low=0.0, high=1.0, size=(config.OPENBCI_EEG_CHANNEL_SIZE, 1))

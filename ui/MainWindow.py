@@ -25,30 +25,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.app = app
 
-        # workers
-        self.worker_threads = {}
-        self.lsl_inference_workers = {}
-
-        # data buffer
-        self.LSL_plots_fs_label_dict = {}
-
-
-        if inference_interface:
-            self.inference_interface = inference_interface
-
-        # timer
-        self.timer = QTimer()
-        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
-        self.timer.timeout.connect(self.ticks)
-        self.timer.start()
-
-        # visualization timer
-        self.v_timer = QTimer()
-        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.v_timer.timeout.connect(self.visualize_inference_result)
-        self.v_timer.start()
-
-
+        # # workers
+        # self.worker_threads = {}
+        # self.lsl_inference_workers = {}
+        #
+        # # data buffer
+        # self.LSL_plots_fs_label_dict = {}
+        #
+        #
+        # if inference_interface:
+        #     self.inference_interface = inference_interface
+        #
+        # # timer
+        # self.timer = QTimer()
+        # self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
+        # self.timer.timeout.connect(self.ticks)
+        # self.timer.start()
+        #
+        # # visualization timer
+        # self.v_timer = QTimer()
+        # self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        # self.v_timer.timeout.connect(self.visualize_inference_result)
+        # self.v_timer.start()
 
 
 

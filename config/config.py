@@ -5,7 +5,7 @@ from utils.general import slice_len_for
 User parameters:
 Use these parameters to set the RN App to your preference
 '''
-REFRESH_INTERVAL = 10  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+REFRESH_INTERVAL = 25  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 VISUALIZATION_REFRESH_INTERVAL = 33  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
 CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
 PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep

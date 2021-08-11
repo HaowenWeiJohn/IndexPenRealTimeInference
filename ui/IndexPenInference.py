@@ -3,12 +3,19 @@ import pickle
 
 from PyQt5 import QtCore, uic
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QTimer
 
 import numpy as np
 from datetime import datetime
 import pyqtgraph as pg
+
+from interfaces.LSLInletInterface import LSLInletInterface
+from threadings.workers import MmWaveLSLInletInferenceWorker
+from threadings import workers
+
 from utils.ui_utils import *
 from config import config_path
+from config import config
 from utils.sound import *
 
 import datetime
@@ -98,6 +105,30 @@ class IndexPenInference(QtWidgets.QWidget):
         self.connect_mmwave_lsl_btn.clicked.connect(self.connect_mmwave_lsl_btn_clicked)
 
         self.interpreter = None
+        self.mmWave_lsl_interface = None
+        self.mmWave_inference_worker = {}
+        self.worker_threads = {}
+        # # workers
+        # self.worker_threads = {}
+        # self.lsl_inference_workers = {}
+
+        # timer
+        self.timer = QTimer()
+        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
+        self.timer.timeout.connect(self.tick)
+        self.timer.start()
+
+        # # visualization timer
+        # self.v_timer = QTimer()
+        # self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        # self.v_timer.timeout.connect(self.visualize_inference_result)
+        # self.v_timer.start()
+
+
+
+
+
+
 
     def load_indexpen_model_btn_clicked(self):
 
@@ -119,5 +150,23 @@ class IndexPenInference(QtWidgets.QWidget):
 
 
     def connect_mmwave_lsl_btn_clicked(self):
-        print('load_indexpen_model_btn clicked')
-        return
+        # create mmWave lsl worker
+        lsl_stream_name = self.indexpeninference_lslname_input.text()
+        print(lsl_stream_name)
+        try:
+            self.mmWave_lsl_interface = LSLInletInterface(lsl_stream_name)
+        except AttributeError:
+            print('Cannot find LSL name')
+            dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
+        self.mmWave_inference_worker[lsl_stream_name] = workers.MmWaveLSLInletInferenceWorker(self.mmWave_lsl_interface, indexpen_interpreter=self.interpreter)
+        worker_thread = pg.QtCore.QThread(self)
+        self.worker_threads[lsl_stream_name] = worker_thread
+        self.mmWave_inference_worker[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
+        worker_thread.start()
+
+    def tick(self):
+        """
+        ticks every 'refresh' milliseconds
+        """
+        # pass
+        [w.tick_signal.emit() for w in self.mmWave_inference_worker.values()]
