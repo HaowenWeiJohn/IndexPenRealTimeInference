@@ -26,7 +26,7 @@ class LSLInletInterface:
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
-
+        self.clean_buffer()
         # read the channel names is there's any
         # tell the sensor to start sending frames
 
@@ -37,7 +37,7 @@ class LSLInletInterface:
         except LostError:
             frames, timestamps = [], []
             pass  # TODO handle stream lost
-        return np.transpose(frames), timestamps
+        return frames, timestamps
 
     def stop_sensor(self):
         if self.inlet:

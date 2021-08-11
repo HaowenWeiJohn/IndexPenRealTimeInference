@@ -76,7 +76,6 @@ class IndexPenInference(QtWidgets.QWidget):
              label='IndexPen Inference LSL Connection Control Panel')
         # check box hide realtime inference plot
 
-
         self.indexpeninference_modelselection_container, self.indexpeninference_modelselection_layout = init_container \
             (parent=self.indexpeninference_control_layout, vertical=True, label='IndexPen Inference Model')
         self.indexpeninference_modelpath_layout, self.indexpeninference_modelpath_input = init_inputBox(
@@ -85,7 +84,6 @@ class IndexPenInference(QtWidgets.QWidget):
             default_input=config_path.indexpen_model_path)
         self.load_indexpen_model_btn = init_button(parent=self.indexpeninference_modelselection_layout,
                                                    label='Load IndexPen Model')
-
 
         self.indexpeninference_lslconnection_control_container, self.indexpeninference_lslconnection_control_layout = init_container \
             (parent=self.indexpeninference_control_layout, vertical=True, label='IndexPen Inference LSL control')
@@ -96,13 +94,22 @@ class IndexPenInference(QtWidgets.QWidget):
         self.connect_mmwave_lsl_btn = init_button(parent=self.indexpeninference_lslconnection_control_layout,
                                                   label='Connect mmWave LSL')
 
-
         self.indexpeninference_plot_checkbox, self.indexpeninference_plot_checkbox = init_checkBox(
             parent=self.indexpeninference_control_layout, label='Inference Plot Hidden: ', default_checked=False)
+
+        self.indexpeninference_start_stop_btn_container, self.indexpeninference_start_stop_btn_layout = init_container \
+            (parent=self.indexpeninference_control_layout, vertical=False, label='')
+
+        self.indexpeninference_start_btn = init_button(parent=self.indexpeninference_start_stop_btn_layout,
+                                                       label='Start Inference')
+        self.indexpeninference_stop_btn = init_button(parent=self.indexpeninference_start_stop_btn_layout,
+                                                      label='Stop Inference')
 
         # button clicked
         self.load_indexpen_model_btn.clicked.connect(self.load_indexpen_model_btn_clicked)
         self.connect_mmwave_lsl_btn.clicked.connect(self.connect_mmwave_lsl_btn_clicked)
+        self.indexpeninference_start_btn.clicked.connect(self.indexpeninference_start_btn_clicked)
+        self.indexpeninference_stop_btn.clicked.connect(self.indexpeninference_stop_btn_clicked)
 
         self.interpreter = None
         self.mmWave_lsl_interface = None
@@ -124,17 +131,11 @@ class IndexPenInference(QtWidgets.QWidget):
         # self.v_timer.timeout.connect(self.visualize_inference_result)
         # self.v_timer.start()
 
-
-
-
-
-
-
     def load_indexpen_model_btn_clicked(self):
 
         print('connect_mmwave_lsl_btn clicked')
         try:
-            self.interpreter = tf.lite.Interpreter(model_path= self.indexpeninference_modelpath_input.text())
+            self.interpreter = tf.lite.Interpreter(model_path=self.indexpeninference_modelpath_input.text())
             self.interpreter.allocate_tensors()
 
             # interpreter.set_tensor(input1_index, np.expand_dims(np.array(X_mmw_rD_test[0]), axis=0).astype(np.float32))
@@ -148,8 +149,14 @@ class IndexPenInference(QtWidgets.QWidget):
             print('File does not exist')
             raise ValueError
 
-
     def connect_mmwave_lsl_btn_clicked(self):
+        try:
+            if self.interpreter is None:
+                raise AssertionError('Please Load the inference model(interpreter) first')
+        except AssertionError as e:
+            dialog_popup(str(e))
+            return None
+
         # create mmWave lsl worker
         lsl_stream_name = self.indexpeninference_lslname_input.text()
         print(lsl_stream_name)
@@ -158,11 +165,24 @@ class IndexPenInference(QtWidgets.QWidget):
         except AttributeError:
             print('Cannot find LSL name')
             dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
-        self.mmWave_inference_worker[lsl_stream_name] = workers.MmWaveLSLInletInferenceWorker(self.mmWave_lsl_interface, indexpen_interpreter=self.interpreter)
+            return None
+        self.mmWave_inference_worker[lsl_stream_name] = workers.MmWaveLSLInletInferenceWorker(self.mmWave_lsl_interface,
+                                                                                              indexpen_interpreter=self.interpreter)
         worker_thread = pg.QtCore.QThread(self)
         self.worker_threads[lsl_stream_name] = worker_thread
         self.mmWave_inference_worker[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
         worker_thread.start()
+        print('Inference worker created')
+
+    def indexpeninference_start_btn_clicked(self):
+        print('indexpeninference_start_btn_clicked')
+        try:
+            self.mmWave_inference_worker[self.mmWave_lsl_interface.lsl_data_type].start_stream()
+        except AttributeError:
+            dialog_popup('please load the model and connect to lsl stream first')
+
+    def indexpeninference_stop_btn_clicked(self):
+        print('indexpeninference_stop_btn_clicked')
 
     def tick(self):
         """
