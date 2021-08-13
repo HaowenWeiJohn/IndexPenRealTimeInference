@@ -11,7 +11,7 @@ mmw_rd_rc_csr = 0.8
 mmw_razi_rc_csr = 0.8
 gui_mmw_rd_rc_csr_default = mmw_rd_rc_csr * 100
 gui_mmw_ra_rc_csr_default = mmw_razi_rc_csr * 100
-
+mmWave_fps = 30
 
 indexpen_classes = ['A', 'B', 'C', 'D', 'E',
                     'F', 'G', 'H', 'I', 'J',
@@ -21,3 +21,10 @@ indexpen_classes = ['A', 'B', 'C', 'D', 'E',
                     'Z', 'Spc', 'Bspc', 'Ent', 'Act', 'Nois']
 
 indexPen_debouncer_threshold = 90
+
+
+debouncerFrameThreshold = 60
+debouncerProbThreshold = 0.8
+
+relaxPeriod = 5
+inactivateClearThreshold = 10

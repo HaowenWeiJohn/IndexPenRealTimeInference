@@ -54,16 +54,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-    def init_inference_lsl(self):
-        data_lsl_stream_name = 'indexpen'
+    # def init_inference_lsl(self):
+    #     data_lsl_stream_name = 'indexpen'
+    #
 
 
-
-    def ticks(self):
-        pass
-
-    def visualize_inference_result(self):
-        pass
+    # def ticks(self):
+    #     pass
+    #
+    # def visualize_inference_result(self):
+    #     pass
 
 
     def closeEvent(self, event):

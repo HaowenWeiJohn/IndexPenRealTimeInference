@@ -88,12 +88,13 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None, vert
 
     return layout, textbox
 
-def init_textEditInputBox(parent, label=None, label_bold=False, default_input=None, vertical=False):
+def init_textEditInputBox(parent, font_size=20, label=None, label_bold=False, default_input=None, vertical=False):
     container, layout = init_container(parent=parent,
                                        label=label,
                                        label_bold=label_bold,
                                        vertical=vertical)
     textbox = QtWidgets.QTextEdit()
+    textbox.setFontPointSize(font_size)
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
     layout.addWidget(textbox)

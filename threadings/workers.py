@@ -10,7 +10,7 @@ from config import config_ui
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.data_utils import is_broken_frame, clutter_removal
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
-
+import pylsl
 import pyautogui
 
 import numpy as np
@@ -29,7 +29,7 @@ class MmWaveLSLInletInferenceWorker(QObject):
 
         self._lslInlet_interface = LSLInlet_interface
 
-        self._indexpen_interpreter = indexpen_interpreter
+        self._interpreter = indexpen_interpreter
         # self._indexpen_interpreter.allocate_tensors()
 
         self.IndexPenRealTimePreprocessor = IndexPenRealTimePreprocessor()
@@ -42,6 +42,10 @@ class MmWaveLSLInletInferenceWorker(QObject):
         self.rd_hist_buffer = deque(maxlen=120)
         self.ra_hist_buffer = deque(maxlen=120)
 
+        self.input1_index = self._interpreter.get_input_details()[0]["index"]
+        self.input2_index = self._interpreter.get_input_details()[1]["index"]
+        self.output_index = self._interpreter.get_output_details()[0]["index"]
+
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
@@ -53,10 +57,14 @@ class MmWaveLSLInletInferenceWorker(QObject):
             except ZeroDivisionError:
                 sampling_rate = 0
 
-################### preprocessing
+            if len(frames) == 0:
+                return None
+            # else:
+                # print(len(frames))
+            ################### preprocessing
             for frame in frames:
-                current_rd = np.array(frame[0:128]).reshape((8,16))
-                current_ra = np.array(frame[128:640]).reshape((8,64))
+                current_rd = np.array(frame[0:128]).reshape((8, 16))
+                current_ra = np.array(frame[128:640]).reshape((8, 64))
                 rd_cr, ra_cr = self.IndexPenRealTimePreprocessor.data_preprocessing(current_rd=current_rd,
                                                                                     current_ra=current_ra)
                 if rd_cr is not None and ra_cr is not None:
@@ -64,19 +72,27 @@ class MmWaveLSLInletInferenceWorker(QObject):
                     self.rd_hist_buffer.append(rd_cr)
                     self.ra_hist_buffer.append(ra_cr)
 
-            if self.ra_hist_buffer.__len__() == self.ra_hist_buffer.maxlen:
-                prediction_data_set =
+                if self.ra_hist_buffer.__len__() == self.ra_hist_buffer.maxlen:
+                    self._interpreter.set_tensor(self.input1_index,
+                                                 np.expand_dims(np.array(self.rd_hist_buffer), axis=(0, -1)).astype(
+                                                     np.float32))
+                    self._interpreter.set_tensor(self.input2_index,
+                                                 np.expand_dims(np.array(self.ra_hist_buffer), axis=(0, -1)).astype(
+                                                     np.float32))
 
+                    invoke_start_time = time.time()
+                    self._interpreter.invoke()
+                    # print('Invoking duration: ', invoke_start_time - time.time())
 
+                    output = self._interpreter.tensor(self.output_index)
+                    soft_max_out = np.array(output()[0])
 
+                else:
+                    return None
 
-            else:
+                data_dict = {'prediction_result': soft_max_out, 'prediction_timestamp': timestamps[-1], 'prediction_rate': sampling_rate}
 
-
-
-            data_dict = {'prediction result'}
-
-            self.signal_data.emit(data_dict)
+                self.signal_data.emit(data_dict)
 
     def start_stream(self):
         try:
@@ -138,4 +154,3 @@ class IndexPenRealTimePreprocessor:
             print('two continuous borken frame, equalize with previous one')
 
         return data_buffer
-

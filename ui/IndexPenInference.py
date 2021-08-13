@@ -1,20 +1,23 @@
 # This Python file uses the following encoding: utf-8
 import pickle
+from collections import deque
 
 from PyQt5 import QtCore, uic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
 
+from pynput.keyboard import Key, Controller
 import numpy as np
 from datetime import datetime
 import pyqtgraph as pg
+from pyqtgraph import PlotDataItem
 
 from interfaces.LSLInletInterface import LSLInletInterface
 from threadings.workers import MmWaveLSLInletInferenceWorker
 from threadings import workers
 
 from utils.ui_utils import *
-from config import config_path
+from config import config_path, config_signal
 from config import config
 from utils.sound import *
 
@@ -54,18 +57,27 @@ class IndexPenInference(QtWidgets.QWidget):
         self.indexpeninference_text_layout, self.indexpeninference_text_input = init_textEditInputBox(
             parent=self.indexpeninference_display_layout,
             label='IndexPen Inference Text Input :',
-            default_input=config_ui.indexPen_classes_default,
+            default_input=config_ui.indexPen_text_input_default,
             vertical=True)
 
         # plotting container
         self.indexpeninference_plot_container, self.indexpeninference_plot_layout = init_container \
-            (parent=self.indexpeninference_display_layout, vertical=True, label='IndexPen Inference argmax plot')
+            (parent=self.indexpeninference_display_layout, vertical=True, label='IndexPen Inference Visualization')
+
         # init inference plot block
-        fs_label = QLabel(text='Sampling rate = ')
-        ts_label = QLabel(text='Current Time Stamp = ')
-        self.indexpeninference_plot_layout.addWidget(fs_label)
-        self.indexpeninference_plot_layout.addWidget(ts_label)
+        self.fs_label = QLabel(text='Prediction rate = ')
+        self.ts_label = QLabel(text='Current Time Stamp = ')
+        self.indexpeninference_plot_layout.addWidget(self.fs_label)
+        self.indexpeninference_plot_layout.addWidget(self.ts_label)
+
         plot_widget = pg.PlotWidget()
+        distinct_colors = get_distinct_colors(len(config_signal.indexpen_classes))
+        plot_widget.addLegend()
+        self.plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+                      zip(distinct_colors, config_signal.indexpen_classes)]
+        [p.setDownsampling(auto=True, method='mean') for p in self.plots if p == PlotDataItem]
+        [p.setClipToView(clip=True) for p in self.plots for p in self.plots if p == PlotDataItem]
+
         self.indexpeninference_plot_layout.addWidget(plot_widget)
 
         ###########################################################
@@ -115,9 +127,16 @@ class IndexPenInference(QtWidgets.QWidget):
         self.mmWave_lsl_interface = None
         self.mmWave_inference_worker = {}
         self.worker_threads = {}
+
+        # prediction parameters
+        self.debouncer = np.zeros(31)
+        self.relaxCounter = 0
+        self.pred_prob_hist_buffer = deque(maxlen=config_signal.mmWave_fps * 20)
+        self.pred_ts_hist_buffer = deque(maxlen=config_signal.mmWave_fps * 20)
         # # workers
         # self.worker_threads = {}
         # self.lsl_inference_workers = {}
+        self.keyboard = Controller()
 
         # timer
         self.timer = QTimer()
@@ -168,6 +187,7 @@ class IndexPenInference(QtWidgets.QWidget):
             return None
         self.mmWave_inference_worker[lsl_stream_name] = workers.MmWaveLSLInletInferenceWorker(self.mmWave_lsl_interface,
                                                                                               indexpen_interpreter=self.interpreter)
+        self.mmWave_inference_worker[lsl_stream_name].signal_data.connect(self.process_prediction_visualization)
         worker_thread = pg.QtCore.QThread(self)
         self.worker_threads[lsl_stream_name] = worker_thread
         self.mmWave_inference_worker[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
@@ -190,3 +210,60 @@ class IndexPenInference(QtWidgets.QWidget):
         """
         # pass
         [w.tick_signal.emit() for w in self.mmWave_inference_worker.values()]
+
+    def process_prediction_visualization(self, data_dict):
+        prediction_result = data_dict['prediction_result']
+        prediction_timestamp = data_dict['prediction_timestamp']
+        prediction_rate = data_dict['prediction_rate']
+        self.pred_prob_hist_buffer.append(prediction_result)
+        self.pred_ts_hist_buffer.append(prediction_timestamp)
+
+        if self.relaxCounter == config_signal.relaxPeriod:
+            breakIndices = np.argwhere(prediction_result >= config_signal.debouncerProbThreshold)
+            self.debouncer[breakIndices[:, 0]] += 1
+            detects = np.argwhere(np.array(self.debouncer) >= config_signal.debouncerFrameThreshold)
+            if len(detects) > 0:
+                print(detects)
+                detect_char = config_signal.indexpen_classes[detects[0][0]]
+                print(detect_char)
+                self.debouncer = np.zeros(31)
+                self.relaxCounter = 0
+
+                # GUI output char update invoke text input
+                if detect_char=='Nois':
+                    pass
+                    # self.keyboard.press(Key.enter)
+                    # self.keyboard.release(Key.enter)
+                elif detect_char=='Act':
+                    #TODO: activate indexpen
+                    pass
+                    # self.keyboard.press(Key.enter)
+                    # self.keyboard.release(Key.enter)
+                elif detects == 'Ent':
+                    self.keyboard.press(Key.enter)
+                    self.keyboard.release(Key.enter)
+                elif detect_char == 'Spc':
+                    self.keyboard.press(Key.space)
+                    self.keyboard.release(Key.space)
+                elif detect_char == 'Bspc':
+                    self.keyboard.press(Key.backspace)
+                    self.keyboard.release(Key.backspace)
+                else:
+                    self.keyboard.press(detect_char)
+                    self.keyboard.release(detect_char)
+
+
+        else:
+            self.relaxCounter += 1
+
+        # plot real time
+
+        self.fs_label.setText('Prediction rate = ' + str(prediction_rate))
+        self.ts_label.setText('Current Time Stamp = ' + str(prediction_timestamp))
+        time_vector = np.array(self.pred_ts_hist_buffer) - self.pred_ts_hist_buffer[0]
+        prediction_hist = np.array(self.pred_prob_hist_buffer)
+
+        [plot.setData(time_vector, prediction_hist[:, i]) for i, plot in
+         enumerate(self.plots)]
+
+        return None
