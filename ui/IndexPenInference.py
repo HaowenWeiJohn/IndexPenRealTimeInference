@@ -70,7 +70,9 @@ class IndexPenInference(QtWidgets.QWidget):
         self.indexpeninference_plot_layout.addWidget(self.fs_label)
         self.indexpeninference_plot_layout.addWidget(self.ts_label)
 
+        ########################################################
         plot_widget = pg.PlotWidget()
+        plot_widget.setLimits(xMin=0, xMax=21, yMin=0, yMax=1.2)
         distinct_colors = get_distinct_colors(len(config_signal.indexpen_classes))
         plot_widget.addLegend()
         self.plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
@@ -80,6 +82,18 @@ class IndexPenInference(QtWidgets.QWidget):
 
         self.indexpeninference_plot_layout.addWidget(plot_widget)
 
+        #########################################################
+        barchart_widget = pg.PlotWidget()
+        barchart_widget.setLimits(xMin=0, xMax=len(config_signal.indexpen_classes), yMin=0, yMax=1.1)
+        label_x_axis = barchart_widget.getAxis('bottom')
+        label_dict = dict(enumerate(config_signal.indexpen_classes)).items()
+        label_x_axis.setTicks([label_dict])
+        y1 = np.array([0] * len(config_signal.indexpen_classes))
+        # create horizontal list
+        x = np.arange(len(config_signal.indexpen_classes))
+        self.indexpeninference_prob_bars = pg.BarGraphItem(x=x, height=y1, width=0.6, brush='r')
+        barchart_widget.addItem(self.indexpeninference_prob_bars)
+        self.indexpeninference_plot_layout.addWidget(barchart_widget)
         ###########################################################
         # Right objectName: indexpeninference_control_Widget layoutName: indexpeninference_control_vertical_layout
         # control pannel vertical layout
@@ -120,6 +134,7 @@ class IndexPenInference(QtWidgets.QWidget):
         # button clicked
         self.load_indexpen_model_btn.clicked.connect(self.load_indexpen_model_btn_clicked)
         self.connect_mmwave_lsl_btn.clicked.connect(self.connect_mmwave_lsl_btn_clicked)
+        self.indexpeninference_plot_checkbox.stateChanged.connect(self.indexpeninference_plot_checkbox_stateChange)
         self.indexpeninference_start_btn.clicked.connect(self.indexpeninference_start_btn_clicked)
         self.indexpeninference_stop_btn.clicked.connect(self.indexpeninference_stop_btn_clicked)
 
@@ -194,6 +209,12 @@ class IndexPenInference(QtWidgets.QWidget):
         worker_thread.start()
         print('Inference worker created')
 
+    def indexpeninference_plot_checkbox_stateChange(self):
+        if self.indexpeninference_plot_checkbox.isChecked():
+            self.indexpeninference_plot_container.hide()
+        else:
+            self.indexpeninference_plot_container.show()
+
     def indexpeninference_start_btn_clicked(self):
         print('indexpeninference_start_btn_clicked')
         try:
@@ -230,12 +251,12 @@ class IndexPenInference(QtWidgets.QWidget):
                 self.relaxCounter = 0
 
                 # GUI output char update invoke text input
-                if detect_char=='Nois':
+                if detect_char == 'Nois':
                     pass
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
-                elif detect_char=='Act':
-                    #TODO: activate indexpen
+                elif detect_char == 'Act':
+                    # TODO: activate indexpen
                     pass
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
@@ -265,5 +286,10 @@ class IndexPenInference(QtWidgets.QWidget):
 
         [plot.setData(time_vector, prediction_hist[:, i]) for i, plot in
          enumerate(self.plots)]
+
+
+        self.indexpeninference_prob_bars.setOpts(x=np.arange(len(config_signal.indexpen_classes)),
+                                                 height=prediction_result, width=0.6, brush='r')
+        # print(np.arange(len(config_signal.indexpen_classes)), prediction_result)
 
         return None
