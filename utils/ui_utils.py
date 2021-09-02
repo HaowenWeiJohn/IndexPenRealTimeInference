@@ -88,20 +88,25 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None, vert
 
     return layout, textbox
 
-def init_textEditInputBox(parent, font_size=20, minimum_width_offset=30, minimum_height_offset=30, label=None, label_bold=False, default_input=None, vertical=False):
+
+def init_textEditInputBox(parent, font_size=20, minimum_width_offset=30, minimum_height_offset=60, label=None,
+                          label_bold=False, default_input=None, vertical=False):
     container, layout = init_container(parent=parent,
                                        label=label,
                                        label_bold=label_bold,
                                        vertical=vertical)
     textbox = QtWidgets.QTextEdit()
-    textbox.setFontPointSize(font_size)
+    font = textbox.font()
+    font.setPointSize(font_size)
+    textbox.setFont(font)
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
-    textbox.setMinimumSize(font_size+minimum_width_offset, font_size+minimum_height_offset)
+    textbox.setMinimumSize(font_size + minimum_width_offset, font_size + minimum_height_offset)
     layout.addWidget(textbox)
     # textbox.setStyleSheet("background-color:white;")
 
     return layout, textbox
+
 
 def init_button(parent, label=None, function=None, style=config_ui.button_style_classic):
     btn = QtWidgets.QPushButton(text=label)
@@ -364,6 +369,7 @@ class AnotherWindow(QWidget):
         else:
             event.ignore()
 
+
 def load_all_lslStream_presets(lsl_preset_roots='Presets/ExpPresets'):
     preset_file_names = os.listdir(lsl_preset_roots)
     preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
@@ -374,3 +380,22 @@ def load_all_lslStream_presets(lsl_preset_roots='Presets/ExpPresets'):
         stream_name = preset_dict['ExpName']
         presets[stream_name] = preset_dict
     return presets
+
+
+def generate_sentence_task(file_path="resources/pangram/40sentences.txt"):
+    f = open(file_path, "r")
+    sent_list = []
+    for (index, sent) in enumerate(f):
+        # curr_sent = sent.replace(" ", "+").strip()
+        # curr_sent = ' '.join(curr_sent.upper())
+        # curr_sent = curr_sent.replace("+", "Spc")
+        #
+        # # add enter
+        # curr_sent = ''.join(('Nois Act ', curr_sent, ' Ent Act Nois'))
+        # sent_list.append(curr_sent)
+        # # curr_sent = split(" ".join(cur_sent))
+
+        curr_sent = sent.upper().strip()
+        sent_list.append(curr_sent)
+
+    return sent_list

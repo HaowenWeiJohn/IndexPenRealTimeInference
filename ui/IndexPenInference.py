@@ -15,6 +15,7 @@ from pyqtgraph import PlotDataItem
 from interfaces.LSLInletInterface import LSLInletInterface
 from threadings.workers import MmWaveLSLInletInferenceWorker
 from threadings import workers
+from utils.data_utils import levenshtein_ratio_and_distance
 
 from utils.ui_utils import *
 from config import config_path, config_signal
@@ -42,6 +43,7 @@ class IndexPenInference(QtWidgets.QWidget):
         super().__init__()
 
         self.inference_state = 'idle'
+        self.indexpen_activated = False
 
         self.ui = uic.loadUi("ui/IndexPenInference.ui", self)
 
@@ -49,16 +51,35 @@ class IndexPenInference(QtWidgets.QWidget):
         self.indexpeninference_display_container, self.indexpeninference_display_layout = init_container \
             (parent=self.indexpeninference_display_vertical_layout, vertical=True, label='IndexPen Real Time Inference')
 
-        self.most_recent_detection_label = QLabel(text='Most Recent Detection:')
-        self.indexpeninference_display_layout.addWidget(self.most_recent_detection_label)
-        self.most_recent_detection_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.most_recent_detection_label.adjustSize()
+        self.levenshtein_distance_ration_label = QLabel(text='Levenshtein Distance Ratio:')
+        self.indexpeninference_display_layout.addWidget(self.levenshtein_distance_ration_label)
+        self.levenshtein_distance_ration_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.levenshtein_distance_ration_label.adjustSize()
 
         self.indexpeninference_text_layout, self.indexpeninference_text_input = init_textEditInputBox(
             parent=self.indexpeninference_display_layout,
             label='IndexPen Inference Text Input :',
             default_input=config_ui.indexPen_text_input_default,
             vertical=True)
+
+        # task list comb_box
+        self.task_dict = generate_sentence_task()
+        self.task_dict.insert(0, config_ui.indexPen_classes_default)
+        self.task_dict_combbox = self.task_dict.copy()
+        for i in range(0, len(self.task_dict_combbox)):
+            self.task_dict_combbox[i] =  ''.join((str(i), '. ', self.task_dict_combbox[i]))
+
+
+        self.task_combo_box = init_combo_box(parent=self.indexpeninference_display_layout, label=None,
+                                          item_list=self.task_dict_combbox)
+
+
+        self.calculate_levenshtein_ratio_and_distance_btn = init_button(parent=self.indexpeninference_display_layout,
+                                                   label='Calculate Levenshtein', function=self.calculate_levenshtein_ratio_and_distance_btn_clicked)
+
+
+
+
 
         # plotting container
         self.indexpeninference_plot_container, self.indexpeninference_plot_layout = init_container \
@@ -94,7 +115,14 @@ class IndexPenInference(QtWidgets.QWidget):
         self.indexpeninference_prob_bars = pg.BarGraphItem(x=x, height=y1, width=0.6, brush='r')
         barchart_widget.addItem(self.indexpeninference_prob_bars)
         self.indexpeninference_plot_layout.addWidget(barchart_widget)
+
+        # reset inference text box button
+        self.reset_indexpen_text_input_button = init_button(parent=self.indexpeninference_display_layout,
+                                                   label='Reset Text Box', function=self.reset_indexpen_text_input_button_clicked)
+
         ###########################################################
+        ###########################################################
+
         # Right objectName: indexpeninference_control_Widget layoutName: indexpeninference_control_vertical_layout
         # control pannel vertical layout
         self.indexpeninference_control_container, self.indexpeninference_control_layout = init_container \
@@ -252,17 +280,25 @@ class IndexPenInference(QtWidgets.QWidget):
 
                 # GUI output char update invoke text input
                 if detect_char == 'Nois':
-                    pass
+                    print()
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
                 elif detect_char == 'Act':
-                    # TODO: activate indexpen
-                    pass
+                    # toggle indexpen
+                    self.indexpen_activated = not self.indexpen_activated
+                    print('Activation: ', self.indexpen_activated)
+                    if self.indexpen_activated is True:
+                        dih()
+                    else:
+                        dah()
+
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
                 elif detects == 'Ent':
                     self.keyboard.press(Key.enter)
                     self.keyboard.release(Key.enter)
+                    dih()
+
                 elif detect_char == 'Spc':
                     self.keyboard.press(Key.space)
                     self.keyboard.release(Key.space)
@@ -287,9 +323,23 @@ class IndexPenInference(QtWidgets.QWidget):
         [plot.setData(time_vector, prediction_hist[:, i]) for i, plot in
          enumerate(self.plots)]
 
-
         self.indexpeninference_prob_bars.setOpts(x=np.arange(len(config_signal.indexpen_classes)),
                                                  height=prediction_result, width=0.6, brush='r')
         # print(np.arange(len(config_signal.indexpen_classes)), prediction_result)
 
         return None
+
+    def reset_indexpen_text_input_button_clicked(self):
+        self.indexpeninference_text_input.setText(config_ui.indexPen_text_input_default)
+        self.indexpen_activated = False
+
+    def calculate_levenshtein_ratio_and_distance_btn_clicked(self):
+        true_string = self.task_dict[self.task_combo_box.currentIndex()]
+        input_string = self.indexpeninference_text_input.toPlainText()
+        print(true_string)
+        print(input_string)
+        levenshtein_ratio = levenshtein_ratio_and_distance(true_string, input_string, ratio_calc=True)
+        print(levenshtein_ratio)
+        levenshtein_distance = levenshtein_ratio_and_distance(true_string, input_string, ratio_calc=False)
+        print(levenshtein_distance)
+        self.levenshtein_distance_ration_label.setText('Levenshtein Distance Ratio: '+ str(levenshtein_ratio))
