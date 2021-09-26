@@ -5,6 +5,7 @@ from collections import deque
 from PyQt5 import QtCore, uic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
+from pyautogui import typewrite
 
 from pynput.keyboard import Key, Controller
 import numpy as np
@@ -269,7 +270,14 @@ class IndexPenInference(QtWidgets.QWidget):
 
         if self.relaxCounter == config_signal.relaxPeriod:
             breakIndices = np.argwhere(prediction_result >= config_signal.debouncerProbThreshold)
-            self.debouncer[breakIndices[:, 0]] += 1
+
+            for i, debouncer_value in enumerate(self.debouncer):
+                if i in breakIndices:
+                    self.debouncer[i] += 1
+                else:
+                    if self.debouncer[i] > 0:
+                        self.debouncer[i] -= 1
+
             detects = np.argwhere(np.array(self.debouncer) >= config_signal.debouncerFrameThreshold)
             if len(detects) > 0:
                 print(detects)
@@ -287,17 +295,19 @@ class IndexPenInference(QtWidgets.QWidget):
                     # toggle indexpen
                     self.indexpen_activated = not self.indexpen_activated
                     print('Activation: ', self.indexpen_activated)
-                    if self.indexpen_activated is True:
-                        dih()
-                    else:
-                        dah()
+                    typewrite('*')
+                    # if self.indexpen_activated is True:
+                    #     dih()
+                    # else:
+                    #     dah()
 
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
                 elif detects == 'Ent':
-                    self.keyboard.press(Key.enter)
-                    self.keyboard.release(Key.enter)
-                    dih()
+                    typewrite('%')
+                    # self.keyboard.press(Key.enter)
+                    # self.keyboard.release(Key.enter)
+                    # dih()
 
                 elif detect_char == 'Spc':
                     self.keyboard.press(Key.space)

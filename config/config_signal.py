@@ -20,11 +20,8 @@ indexpen_classes = ['A', 'B', 'C', 'D', 'E',
                     'U', 'V', 'W', 'X', 'Y',
                     'Z', 'Spc', 'Bspc', 'Ent', 'Act', 'Nois']
 
-indexPen_debouncer_threshold = 90
-
-
-debouncerFrameThreshold = 60
+indexPen_debouncer_threshold = 70
+debouncerFrameThreshold = 50
 debouncerProbThreshold = 0.8
-
-relaxPeriod = 5
+relaxPeriod = 15
 inactivateClearThreshold = 10
