@@ -285,7 +285,7 @@ class IndexPenInference(QtWidgets.QWidget):
                 print(detect_char)
                 self.debouncer = np.zeros(31)
                 self.relaxCounter = 0
-
+                detects = str(detect_char)
                 # GUI output char update invoke text input
                 if detect_char == 'Nois':
                     print()
