@@ -10,7 +10,18 @@ from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
 from PyQt5.QtWidgets import QLabel, QVBoxLayout
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 import json
-
+import cv2
+import qimage2ndarray
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import Qt, QFile, QTextStream
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
+    QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
+import pyqtgraph as pg
+import matplotlib.pyplot as plt
 from config import config_ui
 from utils.Sliders import LabeledSlider
 
@@ -399,3 +410,38 @@ def generate_sentence_task(file_path="resources/pangram/40sentences.txt"):
         sent_list.append(curr_sent)
 
     return sent_list
+
+
+def init_pixel_map(parent, text='map', minimum_size=None,
+                   maximum_size=None,
+                   adjust_size=False,
+                   alignment=QtCore.Qt.AlignCenter):
+    label = QLabel(text=text)
+
+    if minimum_size:
+        label.setMinimumSize(minimum_size[0], minimum_size[1])
+    if maximum_size:
+        label.setMinimumSize(maximum_size[0], maximum_size[1])
+    if alignment:
+        label.setAlignment(alignment)
+    if adjust_size:
+        label.adjustSize()
+    parent.addWidget(label)
+
+
+    return label
+
+
+
+
+def convert_heatmap_qt(spec_array, height=512, width=512):
+    heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
+    qpixmap = QPixmap(heatmap_qim)
+    qpixmap = qpixmap.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
+    return qpixmap
+
+def array_to_colormap_qim(a, normalize=True):
+    im = plt.imshow(a)
+    color_matrix = im.cmap(im.norm(im.get_array()))
+    qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
+    return qim

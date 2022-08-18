@@ -90,7 +90,13 @@ class MmWaveLSLInletInferenceWorker(QObject):
                 else:
                     return None
 
-                data_dict = {'prediction_result': soft_max_out, 'prediction_timestamp': timestamps[-1], 'prediction_rate': sampling_rate}
+                data_dict = {'prediction_result': soft_max_out,
+                             'prediction_timestamp': timestamps[-1],
+                             'prediction_rate': sampling_rate,
+                             'current_rd': current_rd,
+                             'current_ra': current_ra,
+                             'rd_cr': rd_cr,
+                             'ra_cr': ra_cr}
 
                 self.signal_data.emit(data_dict)
 

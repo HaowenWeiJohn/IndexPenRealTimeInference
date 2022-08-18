@@ -1,3 +1,4 @@
+import numpy as np
 filter_names = ['Notch', 'ButterWorth Lowpass', 'ButterWorth Highpass', 'Butterworth Bandpass']
 
 range_bins = 8
@@ -25,3 +26,15 @@ debouncerFrameThreshold = 50
 debouncerProbThreshold = 0.8
 relaxPeriod = 15
 inactivateClearThreshold = 10
+
+
+rd_raw_range_bin_normalizer = [1400, 1000, 600, 200, 0, -200, -400, -800]
+ra_raw_range_bin_normalizer = [2400, 2000, 1600, 1200, 800, 600, 200, 0]
+rd_cr_range_bin_normalizer = [1000, 800, 600, 200, 0, -200, -400, -800]
+ra_cr_range_bin_normalizer = [300, 250, 100, 50, 0, -50, -100, -150]
+
+rd_raw_range_bin_normalizer = np.expand_dims(rd_raw_range_bin_normalizer, axis=-1)
+ra_raw_range_bin_normalizer = np.expand_dims(ra_raw_range_bin_normalizer, axis=-1)
+rd_cr_range_bin_normalizer = np.expand_dims(rd_cr_range_bin_normalizer, axis=-1)
+ra_cr_range_bin_normalizer = np.expand_dims(ra_cr_range_bin_normalizer, axis=-1)
+

@@ -13,6 +13,8 @@ from datetime import datetime
 import pyqtgraph as pg
 from pyqtgraph import PlotDataItem
 
+from config.config_path import indexpen_instance_data_dict_dir
+from config.config_signal import *
 from interfaces.LSLInletInterface import LSLInletInterface
 from threadings.workers import MmWaveLSLInletInferenceWorker
 from threadings import workers
@@ -47,12 +49,13 @@ class IndexPenInference(QtWidgets.QWidget):
         self.indexpen_activated = False
 
         self.ui = uic.loadUi("ui/IndexPenInference.ui", self)
+        self.data_dict = deque(maxlen=6)
 
         # Left objectName: indexpeninference_display_Widget layoutName: indexpeninference_display_vertical_layout
         self.indexpeninference_display_container, self.indexpeninference_display_layout = init_container \
             (parent=self.indexpeninference_display_vertical_layout, vertical=True, label='IndexPen Real Time Inference')
 
-        self.levenshtein_distance_ration_label = QLabel(text='Levenshtein Distance Ratio:')
+        self.levenshtein_distance_ration_label = QLabel(text='String Similarity:')
         self.indexpeninference_display_layout.addWidget(self.levenshtein_distance_ration_label)
         self.levenshtein_distance_ration_label.setAlignment(QtCore.Qt.AlignCenter)
         self.levenshtein_distance_ration_label.adjustSize()
@@ -106,7 +109,7 @@ class IndexPenInference(QtWidgets.QWidget):
 
         #########################################################
         barchart_widget = pg.PlotWidget()
-        barchart_widget.setLimits(xMin=0, xMax=len(config_signal.indexpen_classes), yMin=0, yMax=1.1)
+        barchart_widget.setLimits(xMin=-0.5, xMax=len(config_signal.indexpen_classes), yMin=0, yMax=1.1)
         label_x_axis = barchart_widget.getAxis('bottom')
         label_dict = dict(enumerate(config_signal.indexpen_classes)).items()
         label_x_axis.setTicks([label_dict])
@@ -122,6 +125,43 @@ class IndexPenInference(QtWidgets.QWidget):
                                                    label='Reset Text Box', function=self.reset_indexpen_text_input_button_clicked)
 
         ###########################################################
+
+        self.indexpeninference_map_visualization_container, self.indexpeninference_map_visualization_layout = init_container \
+            (parent=self.indexpeninference_control_vertical_layout, vertical=False, label='Map visualization')
+
+        self.indexpeninference_raw_map_container, self.indexpeninference_raw_map_layout = init_container \
+            (parent=self.indexpeninference_map_visualization_layout, vertical=True, label='Raw profile')
+
+        self.indexpeninference_cr_map_container, self.indexpeninference_cr_map_layout = init_container \
+            (parent=self.indexpeninference_map_visualization_layout, vertical=True, label='Clutter Removal Profile')
+
+
+        self.rd_raw = init_pixel_map(parent=self.indexpeninference_raw_map_layout)
+        self.ra_raw = init_pixel_map(parent=self.indexpeninference_raw_map_layout)
+        self.rd_cr = init_pixel_map(parent=self.indexpeninference_cr_map_layout)
+        self.ra_cr = init_pixel_map(parent=self.indexpeninference_cr_map_layout)
+        # self.rd_raw = QLabel('Image_Label')
+        # self.rd_raw.setAlignment(QtCore.Qt.AlignCenter)
+        # self.indexpeninference_raw_map_layout.addWidget(self.rd_raw)
+        #
+        # self.ra_raw = QLabel('Image_Label')
+        # self.ra_raw.setAlignment(QtCore.Qt.AlignCenter)
+        # self.indexpeninference_raw_map_layout.addWidget(self.ra_raw)
+        #
+        # self.rd_cr = QLabel('Image_Label')
+        # self.rd_cr.setAlignment(QtCore.Qt.AlignCenter)
+        # self.indexpeninference_cr_map_layout.addWidget(self.rd_cr)
+        #
+        # self.ra_cr = QLabel('Image_Label')
+        # self.ra_cr.setAlignment(QtCore.Qt.AlignCenter)
+        # self.indexpeninference_cr_map_layout.addWidget(self.ra_cr)
+
+
+
+
+
+
+
         ###########################################################
 
         # Right objectName: indexpeninference_control_Widget layoutName: indexpeninference_control_vertical_layout
@@ -159,6 +199,15 @@ class IndexPenInference(QtWidgets.QWidget):
                                                        label='Start Inference')
         self.indexpeninference_stop_btn = init_button(parent=self.indexpeninference_start_stop_btn_layout,
                                                       label='Stop Inference')
+        self.indexpeninference_data_instance_save_btn = init_button(parent=self.indexpeninference_control_layout,
+                                                                    label='Save instance data dict', function=self.indexpeninference_data_instance_save_btn_clicked)
+
+        # self.indexpeninference_data_instance_save_btn = init_button(parent=self.indexpeninference_control_layout,
+        #                                                             label='Save prediction result dict',
+        #                                                             function=self.indexpeninference_prediction_save_btn_clicked)
+        #
+        # self.prediction_temporary_save = None
+
 
         # button clicked
         self.load_indexpen_model_btn.clicked.connect(self.load_indexpen_model_btn_clicked)
@@ -262,6 +311,7 @@ class IndexPenInference(QtWidgets.QWidget):
         [w.tick_signal.emit() for w in self.mmWave_inference_worker.values()]
 
     def process_prediction_visualization(self, data_dict):
+        self.data_dict.append(data_dict)
         prediction_result = data_dict['prediction_result']
         prediction_timestamp = data_dict['prediction_timestamp']
         prediction_rate = data_dict['prediction_rate']
@@ -295,19 +345,19 @@ class IndexPenInference(QtWidgets.QWidget):
                     # toggle indexpen
                     self.indexpen_activated = not self.indexpen_activated
                     print('Activation: ', self.indexpen_activated)
-                    typewrite('*')
+                    # typewrite('*')
                     # if self.indexpen_activated is True:
                     #     dih()
                     # else:
-                    #     dah()
+                    dah()
 
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
                 elif detects == 'Ent':
-                    typewrite('%')
+                    # typewrite('%')
                     # self.keyboard.press(Key.enter)
                     # self.keyboard.release(Key.enter)
-                    # dih()
+                    dih()
 
                 elif detect_char == 'Spc':
                     self.keyboard.press(Key.space)
@@ -337,6 +387,23 @@ class IndexPenInference(QtWidgets.QWidget):
                                                  height=prediction_result, width=0.6, brush='r')
         # print(np.arange(len(config_signal.indexpen_classes)), prediction_result)
 
+        # visualize
+
+        # a = np.zeros(shape=(5, 5))
+        # b = np.expand_dims([1, 2, 3, 4, 5], axis=-1)
+        #
+        # c = np.append(b, a, axis=-1)
+        # print(c)
+
+        rd_raw = convert_heatmap_qt(np.append(rd_raw_range_bin_normalizer, data_dict['current_rd'], axis=-1))
+        ra_raw = convert_heatmap_qt(np.append(ra_raw_range_bin_normalizer, data_dict['current_ra'], axis=-1))
+        rd_cr = convert_heatmap_qt(np.append(rd_cr_range_bin_normalizer, data_dict['rd_cr'], axis=-1))
+        ra_cr = convert_heatmap_qt(np.append(ra_cr_range_bin_normalizer, data_dict['ra_cr'], axis=-1))
+        self.rd_raw.setPixmap(rd_raw)
+        self.ra_raw.setPixmap(ra_raw)
+        self.rd_cr.setPixmap(rd_cr)
+        self.ra_cr.setPixmap(ra_cr)
+
         return None
 
     def reset_indexpen_text_input_button_clicked(self):
@@ -352,4 +419,14 @@ class IndexPenInference(QtWidgets.QWidget):
         print(levenshtein_ratio)
         levenshtein_distance = levenshtein_ratio_and_distance(true_string, input_string, ratio_calc=False)
         print(levenshtein_distance)
-        self.levenshtein_distance_ration_label.setText('Levenshtein Distance Ratio: '+ str(levenshtein_ratio))
+        self.levenshtein_distance_ration_label.setText('String Similarity: '+ str(levenshtein_ratio))
+
+
+    def indexpeninference_data_instance_save_btn_clicked(self):
+        if self.data_dict is not None:
+            with open(indexpen_instance_data_dict_dir, 'wb') as f:
+                pickle.dump(self.data_dict, f)
+
+    # def indexpeninference_prediction_save_btn_clicked(self):
+    #     if
+
